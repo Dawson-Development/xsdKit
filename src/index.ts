@@ -1,0 +1,15 @@
+export { Schema, loadSchema, parseSchema } from './schema.js';
+export type { ParseSchemaOptions, NameRef } from './schema.js';
+export { XmlBuilder, XmlBuildError } from './builder.js';
+export type { ToXmlOptions, XmlValue } from './builder.js';
+export { XsdValidationError } from './validator.js';
+export type { ValidationIssue, ValidationResult } from './validator.js';
+export type { SampleOptions } from './sample.js';
+export type { SerializeOptions } from './serializer.js';
+export type { ElementInfo, AttributeInfo, ModelInfo, WildcardInfo } from './describe.js';
+export { SchemaError, fileResolver } from './xsd/loader.js';
+export type { LoadOptions, SchemaResolver, ResolvedSchema } from './xsd/loader.js';
+export { XsdRegexError, compileXsdPattern } from './xsd/regex.js';
+export { parseXml, XmlParseError } from './xml/parser.js';
+export type { XmlDocument, XmlElement, XmlNode } from './xml/parser.js';
+export { XS_NS, XSI_NS, XML_NS } from './xsd/model.js';

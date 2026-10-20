@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns="urn:example:address"
+           targetNamespace="urn:example:address"
+           elementFormDefault="qualified">
+
+  <xs:complexType name="Address">
+    <xs:sequence>
+      <xs:element name="street" type="xs:string" maxOccurs="2"/>
+      <xs:element name="city" type="xs:string"/>
+      <xs:element name="postalCode" type="PostalCode"/>
+      <xs:element name="country" type="xs:string" default="US" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="USAddress">
+    <xs:complexContent>
+      <xs:extension base="Address">
+        <xs:sequence>
+          <xs:element name="state">
+            <xs:simpleType>
+              <xs:restriction base="xs:string">
+                <xs:length value="2"/>
+              </xs:restriction>
+            </xs:simpleType>
+          </xs:element>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:simpleType name="PostalCode">
+    <xs:union>
+      <xs:simpleType>
+        <xs:restriction base="xs:string"><xs:pattern value="\d{5}(-\d{4})?"/></xs:restriction>
+      </xs:simpleType>
+      <xs:simpleType>
+        <xs:restriction base="xs:string"><xs:pattern value="[A-Z]\d[A-Z] \d[A-Z]\d"/></xs:restriction>
+      </xs:simpleType>
+    </xs:union>
+  </xs:simpleType>
+</xs:schema>

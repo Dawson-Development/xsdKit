@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:o="urn:example:order"
+           xmlns:addr="urn:example:address"
+           targetNamespace="urn:example:order"
+           elementFormDefault="qualified">
+
+  <xs:include schemaLocation="common.xsd"/>
+  <xs:import namespace="urn:example:address" schemaLocation="address.xsd"/>
+
+  <xs:element name="order" type="o:OrderType">
+    <xs:annotation><xs:documentation>A customer order.</xs:documentation></xs:annotation>
+  </xs:element>
+
+  <xs:complexType name="OrderType">
+    <xs:sequence>
+      <xs:element name="customer" type="o:CustomerType"/>
+      <xs:element name="shipTo" type="addr:Address"/>
+      <xs:element name="billTo" type="addr:Address" minOccurs="0"/>
+      <xs:element name="items">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="item" type="o:ItemType" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:choice>
+        <xs:element name="card" type="o:CardType"/>
+        <xs:element name="invoice" type="xs:string" nillable="true"/>
+      </xs:choice>
+      <xs:element ref="o:note" minOccurs="0" maxOccurs="3"/>
+      <xs:element name="tags" type="o:TagList" minOccurs="0"/>
+      <xs:element name="extension" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:ID" use="required"/>
+    <xs:attribute name="orderDate" type="xs:date" use="required"/>
+    <xs:attribute name="status" type="o:StatusType" default="new"/>
+    <xs:attribute name="version" type="xs:string" fixed="1.0"/>
+  </xs:complexType>
+
+  <xs:complexType name="CustomerType">
+    <xs:sequence>
+      <xs:element name="name" type="xs:string"/>
+      <xs:element name="email" minOccurs="0">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:pattern value="[^@\s]+@[^@\s]+\.[a-z]{2,}"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="vip" type="xs:boolean" default="false"/>
+  </xs:complexType>
+
+  <xs:complexType name="ItemType">
+    <xs:sequence>
+      <xs:element name="sku" type="o:SkuType"/>
+      <xs:element name="description" type="xs:string" minOccurs="0"/>
+      <xs:element name="quantity" type="o:QuantityType"/>
+      <xs:element name="price" type="o:MoneyType"/>
+      <xs:element name="shipDate" type="xs:dateTime" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="related" type="xs:IDREF"/>
+  </xs:complexType>
+
+  <xs:complexType name="CardType">
+    <xs:all>
+      <xs:element name="number">
+        <xs:simpleType>
+          <xs:restriction base="xs:token">
+            <xs:pattern value="\d{4}( \d{4}){3}"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="expires" type="xs:gYearMonth"/>
+    </xs:all>
+  </xs:complexType>
+
+  <xs:simpleType name="StatusType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="new"/>
+      <xs:enumeration value="paid"/>
+      <xs:enumeration value="shipped"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:element name="note" abstract="true" type="xs:string"/>
+  <xs:element name="publicNote" substitutionGroup="o:note" type="xs:string"/>
+  <xs:element name="internalNote" substitutionGroup="o:note">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:element name="b" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="author" type="xs:NCName" use="required"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

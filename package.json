@@ -1,0 +1,59 @@
+{
+  "name": "xsdkit",
+  "version": "0.1.0",
+  "description": "Zero-dependency XSD parser, schema-aware fluent XML builder, validator and sample generator for Node.js",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "imports": {
+    "#platform": {
+      "types": "./dist/platform-node.d.ts",
+      "browser": "./dist/platform-browser.js",
+      "default": "./dist/platform-node.js"
+    }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./browser": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "xsdkit": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "demo:dev": "npm run build && vite --config demo/vite.config.ts",
+    "demo:build": "npm run build && tsc -p demo/tsconfig.json && vite build --config demo/vite.config.ts",
+    "demo:preview": "vite preview --config demo/vite.config.ts --host 127.0.0.1",
+    "test:browser": "npm run demo:build && playwright test --config demo/playwright.config.ts",
+    "test": "npm run build && tsc -p tsconfig.test.json && node --test \"build-test/test/**/*.test.js\"",
+    "clean": "node -e \"for (const d of ['dist','build-test']) require('fs').rmSync(d,{recursive:true,force:true})\""
+  },
+  "keywords": [
+    "xml",
+    "xsd",
+    "xml-schema",
+    "builder",
+    "validation",
+    "generator"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^22.20.5",
+    "lucide": "^1.60.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.4"
+  }
+}

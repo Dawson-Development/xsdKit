@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!-- Chameleon include: adopts the including schema's target namespace. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:simpleType name="SkuType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[A-Z]{2}-\d{4}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="QuantityType">
+    <xs:restriction base="xs:positiveInteger">
+      <xs:maxExclusive value="1000"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="MoneyType">
+    <xs:simpleContent>
+      <xs:extension base="Amount">
+        <xs:attribute name="currency" use="required">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="USD"/>
+              <xs:enumeration value="EUR"/>
+              <xs:enumeration value="GBP"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:simpleType name="Amount">
+    <xs:restriction base="xs:decimal">
+      <xs:minInclusive value="0"/>
+      <xs:fractionDigits value="2"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TagList">
+    <xs:restriction>
+      <xs:simpleType>
+        <xs:list itemType="xs:NCName"/>
+      </xs:simpleType>
+      <xs:maxLength value="5"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>
