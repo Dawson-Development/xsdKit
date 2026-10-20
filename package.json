@@ -5,6 +5,14 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dawson-Development/xsdKit.git"
+  },
+  "homepage": "https://dawson-development.github.io/xsdKit/",
+  "bugs": {
+    "url": "https://github.com/Dawson-Development/xsdKit/issues"
+  },
   "imports": {
     "#platform": {
       "types": "./dist/platform-node.d.ts",
@@ -23,7 +31,7 @@
     }
   },
   "bin": {
-    "xsdkit": "./dist/cli.js"
+    "xsdkit": "dist/cli.js"
   },
   "files": [
     "dist"

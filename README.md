@@ -23,14 +23,6 @@ npx playwright install chromium
 npm run test:browser     # desktop and mobile browser tests
 ```
 
-### GitHub Pages
-
-1. Push this repository to GitHub, with `main` or `master` as the default branch.
-2. In **Settings > Pages > Build and deployment**, select **GitHub Actions** as the source.
-3. Push to the default branch or run **Test and Deploy Playground** in the Actions tab.
-
-The workflow runs the Node and browser tests before publishing. Pull requests run the same checks without deploying. Relative asset URLs support repository Pages paths and custom domains without configuration. The published URL appears in the deployment environment and Pages settings.
-
 ### Browser API
 
 Browser-aware bundlers such as Vite select a browser adapter automatically:
