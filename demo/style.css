@@ -29,6 +29,10 @@ h1 { font-size: 29px; font-weight: 600; margin: 0; line-height: 1; }
 h1 span { color: var(--green); }
 .edition { font: 10px var(--mono); color: var(--muted); margin: 5px 0 0 10px; padding-left: 20px; border-left: 1px solid var(--line); }
 .header-note { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.github-link { display: inline-flex; align-items: center; justify-content: center; color: var(--green); text-decoration: none; }
+.github-link svg { width: 18px; height: 18px; fill: currentColor; }
+.github-link:hover { color: #104d37; }
+.github-link:focus-visible { outline: 2px solid #247bca; outline-offset: 3px; }
 .local-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
 .version { margin-left: 18px; font-family: var(--mono); }
 main { max-width: 1600px; margin: auto; padding: 32px 36px 0; }
