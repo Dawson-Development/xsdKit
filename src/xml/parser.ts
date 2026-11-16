@@ -57,8 +57,17 @@ export class XmlParseError extends Error {
   }
 }
 
+const XMLNS_NS = 'http://www.w3.org/2000/xmlns/';
+const XML_DECL_RE = /^[ \t\n]+version[ \t\n]*=[ \t\n]*(?:"1\.0"|'1\.0')(?:[ \t\n]+encoding[ \t\n]*=[ \t\n]*(?:"[A-Za-z][A-Za-z0-9._-]*"|'[A-Za-z][A-Za-z0-9._-]*'))?(?:[ \t\n]+standalone[ \t\n]*=[ \t\n]*(?:"(?:yes|no)"|'(?:yes|no)'))?[ \t\n]*$/;
 const PREDEFINED: Record<string, string> = { lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" };
 const NAME_RE = /[\p{L}_:][\p{L}\p{N}\p{M}_:.\-\u00B7]*/uy;
+
+function isXmlChar(cp: number): boolean {
+  return cp === 0x9 || cp === 0xa || cp === 0xd ||
+    (cp >= 0x20 && cp <= 0xd7ff) ||
+    (cp >= 0xe000 && cp <= 0xfffd) ||
+    (cp >= 0x10000 && cp <= 0x10ffff);
+}
 
 export function parseXml(input: string, source?: string): XmlDocument {
   return new Parser(input, source).parseDocument();
@@ -73,7 +82,14 @@ class Parser {
     let s = input.replace(/\r\n?/g, '\n');
     if (s.charCodeAt(0) === 0xfeff) s = s.slice(1);
     this.s = s;
-    for (let i = 0; i < s.length; i++) if (s.charCodeAt(i) === 10) this.lineStarts.push(i + 1);
+    let invalidPos: number | undefined;
+    for (let i = 0; i < s.length;) {
+      const cp = s.codePointAt(i)!;
+      if (!isXmlChar(cp) && invalidPos === undefined) invalidPos = i;
+      if (cp === 0xa) this.lineStarts.push(i + 1);
+      i += cp > 0xffff ? 2 : 1;
+    }
+    if (invalidPos !== undefined) this.error('Character is not allowed in XML 1.0', invalidPos);
   }
 
   private loc(pos: number): { line: number; column: number } {
@@ -125,7 +141,7 @@ class Parser {
     for (;;) {
       this.skipWs();
       if (this.pos >= this.s.length) break;
-      if (this.at('<?')) this.parsePI();
+      if (this.at('<?')) this.parsePI(this.pos === 0);
       else if (this.at('<!--')) this.parseComment();
       else if (this.at('<!DOCTYPE')) {
         if (root) this.error('DOCTYPE must precede the root element');
@@ -139,11 +155,18 @@ class Parser {
     return { root };
   }
 
-  private parsePI(): XmlProcessingInstruction {
+  private parsePI(allowXmlDeclaration = false): XmlProcessingInstruction {
+    const start = this.pos;
     this.pos += 2;
     const target = this.readName();
     const end = this.s.indexOf('?>', this.pos);
     if (end < 0) this.error('Unterminated processing instruction');
+    const raw = this.s.slice(this.pos, end);
+    if (raw && !/^[ \t\n]/.test(raw)) this.error('Expected whitespace after processing instruction target', this.pos);
+    if (target.toLowerCase() === 'xml') {
+      if (!allowXmlDeclaration || target !== 'xml') this.error('Misplaced XML declaration or reserved processing instruction target', start);
+      if (!XML_DECL_RE.test(raw)) this.error('Invalid XML declaration', start);
+    }
     const data = this.s.slice(this.pos, end).trim();
     this.pos = end + 2;
     return { type: 'pi', target, data };
@@ -154,6 +177,8 @@ class Parser {
     const end = this.s.indexOf('-->', this.pos);
     if (end < 0) this.error('Unterminated comment');
     const value = this.s.slice(this.pos, end);
+    const doubleHyphen = value.indexOf('--');
+    if (doubleHyphen >= 0) this.error('"--" is not allowed inside comments', this.pos + doubleHyphen);
     this.pos = end + 3;
     return { type: 'comment', value };
   }
@@ -191,7 +216,7 @@ class Parser {
       if (name.startsWith('#')) {
         const m = /^#(?:x([0-9a-fA-F]+)|([0-9]+))$/.exec(name);
         const cp = m ? (m[1] ? parseInt(m[1], 16) : parseInt(m[2], 10)) : NaN;
-        if (!Number.isFinite(cp) || cp === 0 || cp > 0x10ffff) {
+        if (!Number.isFinite(cp) || !isXmlChar(cp)) {
           this.error(`Invalid character reference "&${name};"`, at + j);
         }
         out += String.fromCodePoint(cp);
@@ -248,6 +273,14 @@ class Parser {
         if (namespaces === parentNs) namespaces = new Map(parentNs);
         const p = a.name === 'xmlns' ? '' : a.name.slice(6);
         if (p && !a.value) this.error(`Cannot undeclare namespace prefix "${p}"`, a.pos);
+        if (p === 'xmlns') this.error('The "xmlns" prefix cannot be declared', a.pos);
+        if (p === 'xml' && a.value !== XML_NS) {
+          this.error(`The "xml" prefix must be bound to "${XML_NS}"`, a.pos);
+        }
+        if (p !== 'xml' && a.value === XML_NS) {
+          this.error(`The namespace "${XML_NS}" can only be bound to the "xml" prefix`, a.pos);
+        }
+        if (a.value === XMLNS_NS) this.error(`The namespace "${XMLNS_NS}" cannot be declared`, a.pos);
         (namespaces as Map<string, string>).set(p, a.value);
       }
     }
@@ -311,7 +344,10 @@ class Parser {
       else {
         const next = this.s.indexOf('<', this.pos);
         const stop = next < 0 ? this.s.length : next;
-        el.children.push({ type: 'text', value: this.decode(this.s.slice(this.pos, stop), this.pos), cdata: false });
+        const raw = this.s.slice(this.pos, stop);
+        const terminator = raw.indexOf(']]>');
+        if (terminator >= 0) this.error('The sequence "]]>" is not allowed in character data', this.pos + terminator);
+        el.children.push({ type: 'text', value: this.decode(raw, this.pos), cdata: false });
         this.pos = stop;
       }
     }

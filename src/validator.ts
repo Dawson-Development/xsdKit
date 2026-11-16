@@ -28,6 +28,8 @@ export interface ValidationIssue {
   message: string;
   /** Source line, when validating a parsed document. */
   line?: number;
+  /** Source column, when reporting an XML parse error. */
+  column?: number;
 }
 
 export interface ValidationResult {
@@ -39,7 +41,12 @@ export class XsdValidationError extends Error {
   constructor(readonly errors: ValidationIssue[]) {
     super(
       `XML is not valid against the schema (${errors.length} error${errors.length === 1 ? '' : 's'}):\n` +
-        errors.map((e) => `  - ${e.path}${e.line ? ` (line ${e.line})` : ''}: ${e.message}`).join('\n'),
+        errors
+          .map((e) => {
+            const location = e.line ? ` (line ${e.line}${e.column ? `, column ${e.column}` : ''})` : '';
+            return `  - ${e.path}${location}: ${e.message}`;
+          })
+          .join('\n'),
     );
     this.name = 'XsdValidationError';
   }

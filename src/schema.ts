@@ -166,7 +166,7 @@ export class Schema {
       root = parseXml(xml).root;
     } catch (e) {
       if (e instanceof XmlParseError) {
-        return { valid: false, errors: [{ path: '/', message: `Not well-formed: ${e.reason}`, line: e.line }] };
+        return { valid: false, errors: [{ path: '/', message: `Not well-formed: ${e.reason}`, line: e.line, column: e.column }] };
       }
       throw e;
     }
