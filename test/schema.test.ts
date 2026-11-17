@@ -1,6 +1,9 @@
 import { strict as assert } from 'node:assert';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { describe, it } from 'node:test';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { SchemaError, compileXsdPattern, loadSchema, parseSchema, parseXml } from '../src/index.js';
 
 const fixture = (f: string) => fileURLToPath(new URL(`../../test/fixtures/${f}`, import.meta.url));
@@ -161,6 +164,24 @@ describe('schema loading', () => {
     assert.equal(s.validate('<r>x</r>').valid, false);
   });
 
+  it('resolves file URL includes with escaped paths', () => {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'xsdkit file url '));
+    try {
+      const included = path.join(directory, 'included types.xsd');
+      const entry = path.join(directory, 'entry.xsd');
+      fs.writeFileSync(included,
+        '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">' +
+        '<xs:simpleType name="Code"><xs:restriction base="xs:string"/></xs:simpleType></xs:schema>');
+      fs.writeFileSync(entry,
+        '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">' +
+        `<xs:include schemaLocation="${pathToFileURL(included).href}"/>` +
+        '<xs:element name="root" type="Code"/></xs:schema>');
+      assert.equal(loadSchema(entry).validate('<root>valid</root>').valid, true);
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
   it('handles recursive types, groups, attribute groups and restriction', () => {
     const s = xsd(`
       <xs:group name="g"><xs:sequence><xs:element name="label" type="xs:string"/></xs:sequence></xs:group>
@@ -199,5 +220,56 @@ describe('xml parser', () => {
     assert.throws(() => parseXml('<a>\n<b x="1" x="2"/></a>'), /Duplicate attribute "x" \(line 2, column 10\)/);
     assert.throws(() => parseXml('<a:b/>'), /Undeclared namespace prefix "a"/);
     assert.throws(() => parseXml('<a>&nbsp;</a>'), /Unknown entity/);
+  });
+
+  it('rejects malformed XML constructs in parsing and schema validation', () => {
+    const schema = parseSchema(
+      '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">' +
+      '<xs:element name="root" type="xs:string"/></xs:schema>',
+    );
+    const cases = [
+      '<root><!-- invalid -- comment --></root>',
+      '<root xmlns:xml="urn:not-xml"/>',
+      '<root>&#1;</root>',
+      '<root>]]></root>',
+      '<root/><?xml version="1.0"?>',
+    ];
+    for (const xml of cases) {
+      assert.throws(() => parseXml(xml), /\(line 1, column \d+\)/, xml);
+      const result = schema.validate(xml);
+      assert.equal(result.valid, false, xml);
+      assert.match(result.errors[0].message, /^Not well-formed:/, xml);
+      assert.equal(result.errors[0].line, 1, xml);
+      assert.ok((result.errors[0].column ?? 0) > 0, xml);
+    }
+  });
+
+  it('accepts valid XML declarations, namespace aliases, comments, CDATA and character references', () => {
+    const schema = parseSchema(
+      '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">' +
+      '<xs:element name="root" type="xs:string"/></xs:schema>',
+    );
+    const xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<root xmlns:xml="http://www.w3.org/XML/1998/namespace" xmlns:a="urn:alias">' +
+      '<![CDATA[<ordinary special chars>]]><!--valid comment-->&#65;&#x1F600;</root>';
+    assert.equal(parseXml(xml).root.local, 'root');
+    assert.equal(schema.validate(xml).valid, true);
+  });
+
+  it('rejects prohibited literal and referenced XML characters and reserved namespace bindings', () => {
+    for (const xml of [
+      '<root>\u0001</root>',
+      '<root>&#xD800;</root>',
+      '<root>&#xFFFE;</root>',
+      '<root xmlns:xmlns="urn:reserved"/>',
+      '<root xmlns:a="http://www.w3.org/XML/1998/namespace"/>',
+      '<root xmlns="http://www.w3.org/XML/1998/namespace"/>',
+      '<root><?XmL version="1.0"?></root>',
+      ' <?xml version="1.0"?><root/>',
+    ]) {
+      assert.throws(() => parseXml(xml), /\(line 1, column \d+\)/, xml);
+    }
+    assert.equal(parseXml('<root>&#x1F600;</root>').root.local, 'root');
+    assert.equal(parseXml('<root><![CDATA[a]]>b</root>').root.local, 'root');
   });
 });

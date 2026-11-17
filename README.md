@@ -36,6 +36,8 @@ const xml = schema.sample('order').toXml();
 
 For includes/imports, supply a synchronous `resolver` returning `{ id, content }` from preloaded schema strings. In the browser, `baseDir` is a base URL (default `https://xsdkit.local/`), not a filesystem directory. Node-only `loadSchema()`, `Schema.load()`, `validateFile()`, and the default filesystem resolver throw a descriptive error in the browser. The existing Node API is unchanged. Browser use requires a bundler that honors the `browser` condition; this is not a standalone script-tag distribution.
 
+On Node, the default resolver handles relative filesystem locations and `file:` URLs, including URL-encoded path characters. Remote URLs still require a custom resolver.
+
 ## Quick start
 
 ```ts

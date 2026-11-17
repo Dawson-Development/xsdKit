@@ -5,6 +5,7 @@ export function readText(_file: string): string {
 export const resolvePath = (file: string, base = 'https://xsdkit.local/'): string =>
   new URL(file, base.endsWith('/') ? base : `${base}/`).href;
 export const parentPath = (file: string): string => new URL('.', file).href;
+export const resolveFileUrl = (file: string): string => new URL(file).href;
 
 export function encodeBinary(value: Uint8Array, hex: boolean): string {
   if (hex) return Array.from(value, (byte) => byte.toString(16).padStart(2, '0')).join('').toUpperCase();

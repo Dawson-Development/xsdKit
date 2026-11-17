@@ -1,4 +1,4 @@
-import { parentPath, readText, resolvePath } from '#platform';
+import { parentPath, readText, resolveFileUrl, resolvePath } from '#platform';
 import { XmlElement, XmlParseError, parseXml, splitQName } from '../xml/parser.js';
 import {
   AttributeUse,
@@ -40,7 +40,7 @@ export const fileResolver: SchemaResolver = (location, baseId) => {
   if (/^[a-z][a-z0-9+.-]*:\/\//i.test(location) && !location.startsWith('file:')) {
     throw new SchemaError(`Cannot load remote schema "${location}"; supply a custom "resolver" option to handle it.`);
   }
-  const loc = location.startsWith('file:') ? new URL(location).pathname : location;
+  const loc = location.startsWith('file:') ? resolveFileUrl(location) : location;
   const p = resolvePath(loc, baseId ? parentPath(baseId) : undefined);
   return { id: p, content: readText(p) };
 };
