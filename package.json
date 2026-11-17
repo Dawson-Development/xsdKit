@@ -1,6 +1,6 @@
 {
   "name": "xsdkit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Zero-dependency XSD parser, schema-aware fluent XML builder, validator and sample generator for Node.js",
   "type": "module",
   "main": "./dist/index.js",

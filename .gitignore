@@ -4,4 +4,4 @@ build-test/
 demo/dist/
 test-results/
 playwright-report/
-
+.npmrc
